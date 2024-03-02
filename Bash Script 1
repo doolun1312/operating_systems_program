@@ -1,0 +1,148 @@
+#!/bin/bash
+
+
+#creating a function to display the date and time in a messagebox using dialog
+dateandtime() {
+
+dialog --title "Date and Time" --msgbox "$(echo "`date`")" 0 0 
+
+} 
+
+
+
+#creating a function calendar() to display a calendar using dialog 
+calendar () {
+event=$(dialog --stdout --calendar "Calendar" 0 0 0 0 0 --inputbox "Enter a new event: " 0 0); #creating a new event using an inputbox when a date is selected on the calendar
+        exit_status=$? #checks the users's last command
+        case $exit_status in 
+        0 ) #if the exit status is equal to 0 (if the ok button is pressed)
+        echo $date $event >> events #saves the user's input, as well as the date of the event in a file called events (creates the file if it does not exist already)
+        ;;
+        1 ) #if the exit status is equal to 1 (if the cancel button is pressed)
+        dialog --msgbox "Cancelling" 0 0;   #displays a cancelling message using msgbox, and redirects the user to the calendar menu
+        clear;
+        ;;
+        esac        
+}
+
+
+#Creating a function deletefile() to delete files
+ deletefile() {
+     exit_status=$?
+     case $exit_status in
+     0) if [ -f $1 ] #if exit status=0, meaning the ok button was pressed, checks if the file exists then confirms if the user wants to delete the file
+    then    
+    question= dialog --stdout --yesno "Are you sure you want to delete?" 0 0 
+    exit_status=$?
+    case $exit_status in
+    #if exit status=0, meaning the yes button was pressed: deletes file and displays a message that the file was successfully deleted
+    0 ) rm $file && dialog --msgbox "File successfully deleted!" 0 0 ;;
+    #if exit status=1, meaning the no button was pressed: goes back and does not delete the file
+    1 ) dialog --msgbox "Cancelling deletion" 0 0 ;;
+    255 ) dialog --msgbox "Program aborted." 0 0; clear; exit; ;; #if exit status=255, meaning escape button was pressed: exits the program and displays a message
+    esac
+        else
+        dialog
+        --msgbox "Failed to delete: the file does not exist or a problem occured, please try again" 0 0 #if the file does not exist, displays an error message using msgbox
+        fi ;;
+          1 ) dialog --msgbox "Cancelling" 0 0 ;; #else if exit status=1, meaning the cancel button was pressed, the program displays a cancelling message using msgbox and goes back to the main menu
+    esac
+}
+
+
+#while ok is pressed, runs the program below
+while true; do
+#menu layout 
+  selection=$(dialog --stdout\
+    --backtitle "Coursework2" \
+    --title "Menu" \
+    --clear \
+    --cancel-label "Exit" \
+    --menu "Please select:" 0 0 4 \
+    "1" "Display Date and Time" \
+    "2" "Display Calender" \
+    "3" "Delete file" \
+    ) #--stdout: direct output to the standard output
+    #--menu: height width menu-height
+    
+  exit_status=$? 
+  case $exit_status in
+   1 ) #if exit status=1, meaning the exit button was pressed, the program displays a cancelling message using msgbox, clears then exits the program
+    {
+    dialog --msgbox "Program stopped." 0 0
+    clear
+    exit
+     }
+    ;;
+   255 ) #if exit status=255, meaning escape button was pressed: exits the program and displays a message
+    dialog --msgbox "Program aborted." 0 0
+    clear
+    exit 1
+    ;;
+esac
+
+
+  case $selection in
+    1 ) #if the first element of the selection menu is selected: invoke the dateandtime function to display the date and time
+      dateandtime
+      ;;
+      
+    2 ) #if the second element of the selection menu is selected: invoke the calendar menu below:
+     while true; do
+        selection=$(dialog --stdout\
+        --backtitle "Coursework" \
+        --title "Menu" \
+        --clear \
+        --cancel-label "Exit" \
+        --menu "Please select:" 0 0 4 \
+        "1" "Display Calendar" \
+        "2" "Display all events"\
+        )
+      exit_status=$?
+      case $exit_status in
+        1 ) #if exit status=1, meaning the exit button was pressed, the program displays a cancelling message using msgbox, and goes back to the main menu
+          dialog --msgbox "Cancelled..." 0 0
+          clear
+          break
+          ;;
+        255 ) #if exit status=255, meaning escape button was pressed: exits the program and displays a message
+          dialog --msgbox "Program aborted." 0 0
+          clear
+          exit 1
+          ;;
+      esac
+      case $selection in
+      1 ) #if the first option of the calendar's selection menu is selected: invoke the calendar function to display and add events on calendar
+      calendar
+      ;;
+      
+     
+      2 ) #if the second option of the calendar's selection menu is selected: display all events
+      sort -o events events #sorts the events in the events file and storing it in the same file
+      dialog --title "Events" --msgbox "$(cat events)" 0 0; #printing the content of the new sorted file events in a messagebox 
+      clear;    
+      ;;
+      esac
+      done
+      ;; 
+
+
+    3 ) #if the third element of the selection menu is selected: ask the user to input the path where the file to delete is present
+path=$(dialog --title "Deletetion" --stdout --title "Enter a path or use arrows & space buttons to select" --dselect / 12 55)
+exit_status=$?
+case $exit_status in
+0) if [ -d "$path" ] ; #if exit status=0, meaning the ok button was pressed, checks if the path exists then asks the user to choose a file to delete
+      then    
+      file=$(dialog --title "Deletetion" --stdout --title "Use arrows & space buttons to select a file to delete" --fselect $path/ 12 60)
+      deletefile "$file" #invoke the deletefile function with the selected file to delete as argument
+      else
+      dialog --msgbox "Cannot find the directory, going to current directory." 0 0 #if the path entered by the user does not exist: go to current working directory and ask the user to choose a file to delete in the current path 
+      file=$(dialog --title "Deletetion" --stdout --title "Use arrows & space buttons to select a file to delete" --fselect `pwd`/ 14 60)
+      deletefile "$file" #invoke the deletefile function with the selected file to delete as argument
+      fi ;;
+1 ) dialog --msgbox "Cancelling" 0 0 #if exit status=1, meaning the cancel button was pressed, the program displays a cancelling message using msgbox, and goes back to the main menu
+;;
+esac
+  esac
+done
+

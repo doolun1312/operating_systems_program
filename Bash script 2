@@ -1,0 +1,74 @@
+#!/bin/bash
+# creating a script that displays 5 system configuration information
+
+DIALOG_CANCEL=1
+DIALOG_ESC=255
+
+#creating a function that will display a result using a dialog box
+display_result() {
+  dialog --title "$1" \
+  --no-collapse\
+    --msgbox "$result" 0 0
+}
+
+#while ok button pressed, the program below will be executed
+while true; do
+#layout of the main menu
+  selection=$(dialog --stdout \
+    --backtitle "Coursework" \
+    --title "Menu" \
+    --clear \
+    --cancel-label "Exit" \
+    --menu "Please select:" 0 0 5 \
+    "1" "Operating System Type" \
+    "2" "Computer CPU Information" \
+    "3" "Memory Information" \
+    "4" "Hard Disk Information" \
+    "5" "File System (Mounted)" \
+    )
+    #--stdout: direct output to a standard output
+    #--menu HEIGHT WIDTH MENU_HEIGHT
+  exit_status=$? #checks the user's last command
+  case $exit_status in
+    $DIALOG_CANCEL) #if cancel button pressed the program displays a cancelled message, clears and exits the program
+      {
+      dialog --msgbox "Cancelled..." 0 0
+      clear
+      exit
+      }
+      ;;
+    $DIALOG_ESC) #if esc button pressed the program displays a program aborted message, clears and exits the program
+      dialog --msgbox "Program aborted." 0 0
+      clear
+      exit 1
+      ;;
+  esac
+  case $selection in
+    1 ) #if the first element of the selection menu is selected: it prints the Operating System Type in a message box using the display_result function
+      result=$(echo "`sudo lshw -short`") #might ask for the user's password
+      display_result "Operating System Type"
+      clear;
+      ;;
+    2 ) #if the second element of the selection menu is selected: it prints the Computer CPU Information in a message box using the display_result function
+      result=$(echo "`cat /proc/cpuinfo`")
+      display_result "Computer CPU Information"
+      clear;
+      ;;
+    3 ) #if the third element of the selection menu is selected: it prints the Memory Information in a message box using the display_result function
+      result=$(echo "`cat /proc/meminfo`")
+      display_result "Memory Information"
+      clear;
+      ;;
+    4 ) #if the forth element of the selection menu is selected: it prints the Hard Disk Information in a message box using the display_result function
+      result=$(echo "`inxi -D` \n `sudo hdparm -I /dev/sda`") #Have to download for the inxi command + might ask for the user's password
+      display_result "Hard Disk Information"
+      clear;
+      ;;
+    5 ) #if the fifth element of the selection menu is selected: it prints the File System (Mounted) in a message box using the display_result function
+      result=$(echo "`findmnt`") #Have to download for the findmnt command
+      display_result "File System (Mounted)"
+      clear;
+      ;;
+  esac
+  done
+
